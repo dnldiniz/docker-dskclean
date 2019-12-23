@@ -17,20 +17,13 @@ prepare_log()
 
 log()
 {
-	echo -e $1 2>&1 | $ts >> $logfile 2>&1
+	echo -e $1 2>&1 | $ts >> "$logfile" 2>&1
 }
 
 echo_log()
 {
 	log "$1"
 	echo -e $1
-}
-
-# Continously log all from stdin to stdout and logfile
-# Truncate really long lines on stdout
-log_to_stdout_and_file()
-{
-	tee >($ts >> $logfile) | cut -c -4000
 }
 
 # Continously log all from stdin to logfile
@@ -50,6 +43,7 @@ verbose()
 
 check_docker()
 {
+    IFS='.'
 	# This is the socket to the Docker REST API, through which the many docker clients (such as CLI)
 	# send their requests towards the server.
 	# Check if it exists so we can use the channel with the Docker Server.
@@ -60,17 +54,53 @@ check_docker()
 	
 	# This might require sudo rights (tries to access /var/run/docker.sock)
 	if docker version >/dev/null; then
-		echo "docker is working and responsive"
+		echo_log "Docker is working and responsive"
+        API_VER=$(docker version --format '{{.Server.APIVersion}}')
+        log "Docker API version: $API_VER"
+        read -ra SPLIT_API_VER <<< $API_VER
+        if [[ (${SPLIT_API_VER[0]} -lt 1) || (${SPLIT_API_VER[1]} -lt 25) ]]; then
+            echo_log "Legacy Docker version detected. This script might run commands that are not supported by this
+            engine"
+            exit 1
+            # Here we might want implement a legacy way to clean up resources for Docker Servers with API version older
+            # than 1.25
+        fi
 	else
 		echo "Something is wrong with docker. Try running as root?"
 		exit 1
 	fi
 }
 
+clean_volumes()
+{
+	echo_log "Cleaning all volumes not associated to at least one container."
+	for dangling_volume in $(docker volume ls -qf dangling=true); do
+		if [[ $checkonly -eq 0 ]]; then
+			log "Removing ${dangling_volume}"
+			docker volume rm "${dangling_volume}"
+		else
+			log "Dry run: volume ${dangling_volume} would be removed."
+		fi 
+	done
+}
+
+clean_containers()
+{
+	echo "ok"
+}
+
+clean_images()
+{
+	echo "ok"
+}
+
 clean()
 {
 	echo_log "Starting the clean-up process"
 	check_docker
+	clean_volumes	
+	clean_containers
+	clean_images
 }
 
 usage_and_exit()
