@@ -1,4 +1,28 @@
-#!/bin/bash
+#!/bin/bash - 
+#===============================================================================
+#
+#          FILE: docker-system-cleanup.sh
+# 
+#         USAGE: ./docker-system-cleanup.sh [OPTIONS]
+# 
+#   DESCRIPTION: In its most simple form, this script will clean up exited 
+#                containers, unused images and layers that have no relationship
+#                to any tagged images (dangling).  It is also possible to extend
+#                the cleaning to dangling volumes and maybe in some future release,
+#                the user will be allowed to manually specify resources to be kept 
+#                so all the rest can be pruned.
+# 
+#       OPTIONS: -D; -c; -v; -q
+#  REQUIREMENTS: Docker v1.9.0 or higher
+#        AUTHOR: Daniel Diniz
+#  ORGANIZATION: Balena
+#       CREATED: 12/26/2019 10:45
+#      REVISION: v0.5
+#===============================================================================
+
+set -o nounset                              # Treat unset variables as an error
+
+
 
 typeset -i deepclean=0
 typeset -i checkonly=0

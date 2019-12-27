@@ -1,18 +1,19 @@
 # Balena Disk Clean-up
 
-The goal of this script is to reclaim as much storage memory as possible
-from the disk space occupied with redundant or otherwise unnecessary Docker files,
-accumulated after cycles of deployment, testing and prototyping of applications
-and services with this tool.
-Before running this script, it's recommended to first analyse what the current
-system status is. The following monitoring commands are useful to get an overview
-of how much space each Docker component is currently using:
+The goal of this script is to reclaim as much storage memory as possible from the disk space 
+occupied with redundant or otherwise unnecessary Docker files, usually accumulated with heavy usage 
+and cycles of deployment, testing and prototyping of applications and services.
 
+
+* [Minimum Requirements](#minimum-requirements)
 * [Monitoring Commands](#monitoring-commands)
 * [Docker Storage Internals](#docker-storage-internals)
 
-This road map is a living document, providing an overview of the goals and
-considerations made in respect of the future of the project.
+
+## Minimum Requirements
+
+- This script requires Docker v1.9.0 to run properly
+-- https://github.com/moby/moby/releases/tag/v1.9.0
 
 ## Monitoring Commands
 
@@ -29,7 +30,40 @@ considerations made in respect of the future of the project.
 
 ## Docker Storage Internals
 
-*** TEST TYPE OF TEXT ****
+In UNIX systems, Docker stores all of its resources in the /var/lib/docker directory.
+The actual file structure under this folder varies dependeing on the driver used for storage, which
+defaults to ***aufs***, but can fall back to ***overlay***, ***overlay2***, ***btrfs***, 
+***devicemapper*** or ***zfs***.
+__NOTE__: These files are managed by Docker and should be handled using the interfaces exposed by the Docker API.
+
+If your system deviates from standard listed below, use [docker info](https://docs.docker.com/edge/engine/reference/commandline/info/) with the ```--filter``` parameter to extract which driver and location are currently in use by Docker.
+
+```bash
+$ docker info --format '{{.DriverStatus}}'
+```
+### Containers
+- /var/lib/docker/containers
+
+### Volumes
+A volume allows data to persist, even when a container is deleted. 
+Volumes are also a convenient way to share data between the host and the container, or between containers.
+Volumes created by Docker are usually located under ```/var/lib/docker/volumes```
+
+### Images
+A Docker image is a collection of read-only layers. 
+- When using aufs:
+-- ***/var/lib/docker/aufs/diff/<id>*** has the file contents of the images.
+-- ***/var/lib/docker/repositories-aufs*** is a JSON file containing local image information. 
+
+- When using devicemapper:
+-- ***/var/lib/docker/devicemapper/devicemapper/data*** stores the images
+-- ***/var/lib/docker/devicemapper/devicemapper/metadata*** the metadata
+
+In most other cases:
+- ***/var/lib/docker/{driver-name}*** will contain the driver specific storage for contents of the images.
+- ***/var/lib/docker/graph/<id>*** contains metadata about the image, in the json and layersize files.
+
+__Note__: These files are thin provisioned "sparse" files so they aren't as big as they seem.
 
 ### Clean-up Process
 
@@ -46,4 +80,11 @@ docker rm -f $(docker ps -q -a)
 docker rmi -f $(docker images -a -q)
 Besides the force flag, this command will not delete an image if it’s used by a container or if it has dependent child images.
 
+#### Cleaning Log Files
+```bash
+find /var/lib/docker/containers/ -type f -name “*.log” -delete
+
+Restart docker containers to have those log files created again:
+docker-compose down && docker-compose up -d
+```
 
