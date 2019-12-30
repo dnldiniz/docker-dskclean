@@ -6,14 +6,17 @@ and cycles of deployment, testing and prototyping of applications and services.
 
 
 * [Minimum Requirements](#minimum-requirements)
-* [Monitoring Commands](#monitoring-commands)
 * [Docker Storage Internals](#docker-storage-internals)
+* [Clean-up Process](#clean-up-process)
+* [Monitoring Commands](#monitoring-commands)
+* [Improvements and Optimizations](#improvements-and-optimizations)
 
 ## Minimum Requirements
 
 1. Linux system running Docker
 2. User account with sudo priviliges
-3. This script depends on a number of features available on Docker v1.9.0 and higher. See the [Docker v1.9.0 Release Notes](https://github.com/moby/moby/releases/tag/v1.9.0).
+3. Cleaning volumes requires features available on Docker v1.9.0 and higher. See the 
+[Docker v1.9.0 Release Notes](https://github.com/moby/moby/releases/tag/v1.9.0).
 
 ## Docker Storage Internals
 
@@ -21,6 +24,7 @@ In UNIX systems, Docker stores all of its resources in the /var/lib/docker direc
 The actual file structure under this folder varies dependeing on the driver used for storage, which
 defaults to ```aufs```, but can fall back to ```overlay```, ```overlay2```, ```btrfs```, 
 ```devicemapper``` or ```zfs```.
+
 __NOTE__: These files are managed by Docker and should be handled using the interfaces exposed by the Docker API.
 
 If your system deviates from standard listed below, use 
@@ -46,12 +50,12 @@ A volume allows data to persist, even when a container is deleted.
 Volumes are also a convenient way to share data between the host and the container, or between containers.
 Volumes created by Docker are usually located under ```/var/lib/docker/volumes```
 
-If the ```deep-clean``` flag is used, this script will remove all volumes not associated to any running containers.
-Otherwise, no volumes will be removed, as that could potentially cause aluable data to be permanently lost.
+If the ```deep-clean``` flag is used, this script will remove all volumes not associated with any running containers.  
+Otherwise, no volumes will be removed, as that could potentially cause valuable data to be permanently lost.
 
 ### Images
 
-A Docker image is a collection of read-only layers. Dangling images are layers that have no relationship to any tagged
+A Docker image is a collection of read-only layers. Dangling images are layers that have no relationship with any tagged
 images. These are not strictly necessary anymore and are mostly only used for Docker's caching mechanism, thus safe to
 remove to free up disk space.
 
@@ -71,8 +75,8 @@ __Note__: These files are thin provisioned "sparse" files so they aren't as big 
 
 ## Clean-up Process
 
-When cleaning the Docker environment, containers are the first resources that have to be removed as they lock the all 
-the rest (images, volumes, networks). This script has primarily two execution modes, namely "Normal" (without -D flag)
+When cleaning up a Docker environment, containers are the first resources that should be removed, as they lock the all 
+the rest (images, volumes, networks). This script has primarily two execution modes, namely "Normal" (without -D flag) 
 and "Deep-clean" mode (with -D flag). 
 
 ### Normal Mode
@@ -99,29 +103,33 @@ docker-compose down && docker-compose up -d
 ```
 
 ## Monitoring Commands
+It is highly advisable to use the built-in monitoring commands available in Docker to understand on a high level which
+resources are being stored in your system.`
 
+## General 
 - docker info
 - docker ps
 - docker system df [-v]
 
 ## Images
-
 - docker image ls
 
 ## Volumes
-
 - docker volume ls [-f dangling=true]
 - du -h /var/lib/docker/volumes/VOLUME\_ID/\_data
 
 ## Containers
-
 - docker container ls -s
 
-# Improvements and TODO's
+# Improvements and Optimizations
+To limit the scope of this assignment, I've left a number of improvement ideas scattered through the code tagged with
+TODO's. This is of course not meant to be released, but are easier to understand when left within the context in which
+they belong.
 
-One nifty idea to effectively reduce disk usage without using the Docker engine would be the following:
+One nifty idea I got from StackOverflow to effectively reduce disk usage without using the Docker engine would be as
+follows:
 
-1. Save the all the images: 
+1. Save all images: 
 + ```docker save $(docker images |sed -e '/^/d' -e '/^REPOSITORY/d' -e 's,[ ][ ],:,' -e 's,[ ].,,') > /root/docker.img```
 3. Uninstall docker.
 4. Erase everything in /var/lib/docker: 
