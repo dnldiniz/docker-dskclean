@@ -1,4 +1,4 @@
-# Balena Disk Clean-up
+# Docker Disk Clean-up
 
 The goal of this script is to reclaim as much storage memory as possible from the disk space 
 occupied with redundant or otherwise unnecessary Docker files, usually accumulated with heavy usage 
