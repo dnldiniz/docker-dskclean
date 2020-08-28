@@ -15,7 +15,7 @@
 #       OPTIONS: -D; -c; -v; -q
 #  REQUIREMENTS: Docker v1.9.0 or higher (Docker API v1.21+)
 #        AUTHOR: Daniel Diniz
-#  ORGANIZATION: Balena
+#  ORGANIZATION: 
 #       CREATED: 12/26/2019 10:45
 #      REVISION: v0.5
 #===============================================================================
